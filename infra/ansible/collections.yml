@@ -1,3 +1,4 @@
 collections:
-  - name: openstack.cloud
-    version: 2.4.1
+  - name: https://github.com/openstack/ansible-collections-openstack.git
+    type: git
+    version: 1ce7dd8b5fdaf3da0b38bbb3634194bed3e659c5 # openstack.cloud 2.4.1
