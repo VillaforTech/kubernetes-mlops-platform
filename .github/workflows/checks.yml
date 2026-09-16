@@ -35,3 +35,20 @@ jobs:
           chmod +x kubectl
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
       - run: make check
+      - name: Validate infrastructure tooling
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.local/ansible-collections
+        run: |
+          python -m venv .local/infra-venv
+          .local/infra-venv/bin/python -m pip install -r infra/requirements.txt
+          .local/infra-venv/bin/python -m pip check
+          .local/infra-venv/bin/python -c "import openstack.connection"
+          for attempt in 1 2 3; do
+            .local/infra-venv/bin/ansible-galaxy collection install \
+              -r infra/ansible/collections.yml -p "$ANSIBLE_COLLECTIONS_PATH" --timeout 30 && break
+            if [ "$attempt" -eq 3 ]; then exit 1; fi
+            sleep 5
+          done
+          .local/infra-venv/bin/ansible-doc -t module openstack.cloud.server > /dev/null
+          .local/infra-venv/bin/ansible-playbook --syntax-check -i localhost, infra/ansible/provision.yml
+          .local/infra-venv/bin/ansible-playbook --syntax-check -i infra/ansible/inventory.ini.example infra/ansible/configure.yml
