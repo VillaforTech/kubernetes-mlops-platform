@@ -1,5 +1,7 @@
 # Kubernetes MLOps Platform
 
+[![Checks](https://github.com/VillaforTech/kubernetes-mlops-platform/actions/workflows/checks.yml/badge.svg)](https://github.com/VillaforTech/kubernetes-mlops-platform/actions/workflows/checks.yml)
+
 **Track experiments. Run pipelines. Serve versioned models. Observe the system.**
 
 A reproducible Kubernetes platform that connects MLflow, Kubeflow Pipelines,
@@ -24,7 +26,8 @@ flowchart LR
     MLflow --> Model[Selected run ID]
     Model --> KServe[KServe + Knative + Istio]
     KServe --> API[Model inference]
-    API --> Prom[Prometheus]
+    Model --> Core[Core prediction deployment]
+    Core --> Prom[Prometheus]
     Prom --> Grafana[Grafana dashboards]
     Data[Reference + current data] --> Evidently[Evidently monitoring]
     NGINX[NGINX ingress] --> UIs[Platform interfaces]
@@ -50,7 +53,9 @@ gates, serving, observability, and repeatable operations.
 Prerequisites: Python 3.11, Docker, kind, kubectl, Helm, Git, and Make. The full
 stack is intended for a machine with **16 GiB available to the container engine**;
 the core profile can run with 6–8 GiB. The tested versions and actual observations
-are listed in the [validation record](docs/validation.md).
+are listed in the [validation record](docs/validation.md). Some upstream Kubeflow
+components require amd64 emulation on ARM hosts. Docker Desktop supplied that
+compatibility in the recorded local test.
 
 ```bash
 git clone https://github.com/VillaforTech/kubernetes-mlops-platform.git
@@ -95,9 +100,9 @@ src/mlops_platform/   CLI, training, prediction API, pipelines and monitoring
 k8s/                 Core manifests and provisioned monitoring configuration
 platform/            Full-stack versions, pipelines, serving, ingress and RBAC
 infra/               kind topology, training Job, OpenStack and Ansible
- tests/              Offline behavior and lifecycle tests
- tools/              Manifest validation and user access utilities
- docs/               Architecture, decisions, operations, evidence and case study
+tests/              Offline behavior and lifecycle tests
+tools/              Manifest validation and user access utilities
+docs/               Architecture, decisions, operations, evidence and case study
 ```
 
 ## Scope

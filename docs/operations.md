@@ -22,6 +22,26 @@ an Evidently report independently.
 
 For the smaller profile, use `mlops up`, `mlops demo`, and `mlops smoke`.
 
+To create a three-node topology, use `mlops up --workers 2` on a fresh cluster.
+This places one control plane and two workers on the same Docker host; it does
+not provide host failure tolerance. Existing cluster topology is preserved.
+
+## Observer access
+
+After `mlops full`, create an observer with a one-day client certificate:
+
+```bash
+python tools/create_user.py reviewer
+kubectl --kubeconfig .local/users/reviewer/kubeconfig.json \
+  --context kind-mlops-platform -n mlops get pods
+```
+
+The generated kubeconfig is owner-only. Observers can inspect selected workloads
+and logs but cannot read Secrets or mutate workloads. A certificate is a
+credential; do not commit or share it casually. Removing the shared observer
+RoleBindings revokes that group's namespace access; deleting a local certificate
+file alone does not revoke an already issued copy.
+
 ## Inspect services
 
 ```bash
@@ -38,9 +58,10 @@ Use another terminal for each forwarding process. Stop it with Ctrl-C.
 | Prediction API / OpenAPI docs | mlops | `svc/predictor 8000:8000` |
 | Evidently | mlops | `svc/evidently 8001:8000` |
 | Prometheus | mlops | `svc/prometheus 9090:9090` |
+| MinIO console | mlops | `svc/minio 9001:9001` |
 | Grafana | mlops | `svc/grafana 3000:3000` |
 | Kubeflow UI | kubeflow | `svc/ml-pipeline-ui 8080:80` |
-| NGINX hostname ingress | nginx-ingress | `svc/nginx-nginx-ingress 8081:80` |
+| NGINX hostname ingress | nginx-ingress | `svc/nginx-nginx-ingress-controller 8081:80` |
 
 The Grafana username is `admin`; its generated password is in the owner-only
 `.local/credentials.json`. Read it locally when needed; never copy that file into
@@ -79,11 +100,17 @@ review and redact them before sharing. Common distinctions:
 - `Pending`: inspect resource requests, available memory, PVCs, and scheduling events.
 - `ImagePullBackOff`: check the registry, pinned reference, and platform architecture.
 - `OOMKilled`: inspect the affected process and configured memory limit; MLflow is
-  configured for one worker in the development profile.
+  configured for one worker with unused background job execution disabled.
 - A green readiness probe with a failing smoke test: inspect artifact access and
   the selected run ID, not only the pod's status.
 - No monitoring metric yet: allow the scrape interval and send a prediction.
 - A remote manifest failure: verify the pinned upstream endpoint and network access.
+
+MLflow artifact clients explicitly use the tracking proxy. Direct multipart
+transfers would return cluster-internal MinIO addresses to a laptop. Helm 4 uses
+client-side updates here because controllers own some webhook fields. The small
+Istio control plane reserves 256 MiB and has a 1 GiB limit; resize it for larger
+workloads. Cold registry pulls can take several minutes.
 
 ## Teardown and recovery
 

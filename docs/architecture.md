@@ -25,7 +25,8 @@ and dashboard definitions are restored from Git.
 5. The serving container downloads artifacts for that exact run ID. Failed
    artifact loading prevents successful startup.
 6. KServe routes requests through Knative/Istio and can scale the service to zero.
-7. Prometheus observes bounded-cardinality inference metrics; Grafana displays
+7. Prometheus scrapes the core prediction deployment, which serves the same
+   selected run as KServe. It observes bounded-cardinality metrics; Grafana displays
    throughput, latency, counts, and target availability.
 8. Evidently stores a report comparing reference data with a controlled shift.
    That scenario demonstrates monitoring mechanics, not a production drift claim.
@@ -54,7 +55,7 @@ trusted, operator-controlled tracking server.
 
 ## Reliability limits
 
-A single local node and single-replica databases are deliberate development
+The default single local node and single-replica databases are deliberate development
 choices. Node or cluster deletion can destroy data. Kubernetes readiness verifies
 process availability, while the explicit smoke checks verify selected service
 interactions. Neither establishes an uptime target, backup safety, or resilience
