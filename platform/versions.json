@@ -1,0 +1,8 @@
+{
+  "kfp": "2.17.2",
+  "kfp_commit": "2511cdbd74cd531c6633f2e094d235082a32917d",
+  "kserve": "v0.20.0",
+  "cert_manager": "v1.17.0",
+  "istio": "1.27.1",
+  "knative": "knative-v1.21.1"
+}

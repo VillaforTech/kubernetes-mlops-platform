@@ -1,0 +1,9 @@
+# OpenStack authentication is read from OS_CLOUD / clouds.yaml outside Git.
+cloud: REPLACE_WITH_CLOUD_PROFILE
+server_name: mlops-platform
+image_name: Ubuntu-24.04
+flavor_name: REPLACE_WITH_8_VCPU_16GB_FLAVOR
+network_name: REPLACE_WITH_PRIVATE_NETWORK
+key_name: REPLACE_WITH_EXISTING_SSH_KEYPAIR
+security_groups:
+  - REPLACE_WITH_SSH_ONLY_SECURITY_GROUP
