@@ -1,0 +1,33 @@
+---
+- name: Provision an OpenStack VM for the full platform
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Validate explicit provisioning inputs
+      ansible.builtin.assert:
+        that:
+          - cloud is defined
+          - server_name is defined
+          - image_name is defined
+          - flavor_name is defined
+          - network_name is defined
+          - key_name is defined
+          - security_groups is defined
+        fail_msg: Pass reviewed variables with -e @.local/cloud-vars.yml.
+    - name: Create or reuse the named VM without a floating IP
+      openstack.cloud.server:
+        cloud: '{{ cloud }}'
+        name: '{{ server_name }}'
+        image: '{{ image_name }}'
+        flavor: '{{ flavor_name }}'
+        network: '{{ network_name }}'
+        key_name: '{{ key_name }}'
+        security_groups: '{{ security_groups }}'
+        auto_ip: false
+        timeout: 600
+        state: present
+      register: vm
+    - name: Show instance identifier without authentication data
+      ansible.builtin.debug:
+        msg: 'VM {{ vm.server.id }} is present. Add its reachable address to the local inventory.'

@@ -1,0 +1,96 @@
+---
+- name: Configure an Ubuntu VM and install the platform source
+  hosts: platform
+  gather_facts: true
+  vars:
+    kind_version: v0.32.0
+    kubectl_version: v1.33.12
+    helm_version: v3.19.0
+    platform_dir: '/home/{{ ansible_user }}/mlops-platform'
+    platform_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+  pre_tasks:
+    - name: Require Ubuntu and a supported CPU architecture
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution == 'Ubuntu'
+          - ansible_architecture in ['x86_64', 'aarch64']
+    - name: Install the container engine and Python runtime
+      become: true
+      ansible.builtin.apt:
+        name: [docker.io, python3-venv, python3-pip, ca-certificates, curl]
+        state: present
+        update_cache: true
+    - name: Start Docker
+      become: true
+      ansible.builtin.service:
+        name: docker
+        enabled: true
+        state: started
+    - name: Grant the deployment user Docker access
+      become: true
+      ansible.builtin.user:
+        name: '{{ ansible_user }}'
+        groups: docker
+        append: true
+    - name: Refresh the SSH session after group membership changes
+      ansible.builtin.meta: reset_connection
+  tasks:
+    - name: Install checksum-verified kind
+      become: true
+      ansible.builtin.get_url:
+        url: 'https://github.com/kubernetes-sigs/kind/releases/download/{{ kind_version }}/kind-linux-{{ platform_arch }}'
+        dest: /usr/local/bin/kind
+        mode: '0755'
+        checksum: 'sha256:https://github.com/kubernetes-sigs/kind/releases/download/{{ kind_version }}/kind-linux-{{ platform_arch }}.sha256sum'
+    - name: Install checksum-verified kubectl
+      become: true
+      ansible.builtin.get_url:
+        url: 'https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/{{ platform_arch }}/kubectl'
+        dest: /usr/local/bin/kubectl
+        mode: '0755'
+        checksum: 'sha256:https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/{{ platform_arch }}/kubectl.sha256'
+    - name: Download checksum-verified Helm archive
+      ansible.builtin.get_url:
+        url: 'https://get.helm.sh/helm-{{ helm_version }}-linux-{{ platform_arch }}.tar.gz'
+        dest: '/tmp/helm-{{ helm_version }}.tar.gz'
+        mode: '0600'
+        checksum: 'sha256:https://get.helm.sh/helm-{{ helm_version }}-linux-{{ platform_arch }}.tar.gz.sha256sum'
+    - name: Extract Helm
+      ansible.builtin.unarchive:
+        src: '/tmp/helm-{{ helm_version }}.tar.gz'
+        dest: /tmp
+        remote_src: true
+    - name: Install Helm binary
+      become: true
+      ansible.builtin.copy:
+        src: '/tmp/linux-{{ platform_arch }}/helm'
+        dest: /usr/local/bin/helm
+        remote_src: true
+        mode: '0755'
+    - name: Create the deployment directory
+      ansible.builtin.file:
+        path: '{{ platform_dir }}'
+        state: directory
+        mode: '0755'
+    - name: Upload the explicitly prepared Git source archive
+      ansible.builtin.unarchive:
+        src: '{{ playbook_dir }}/../../.local/source.tar.gz'
+        dest: '{{ platform_dir }}'
+    - name: Create the project virtual environment
+      ansible.builtin.command:
+        argv: [python3, -m, venv, '{{ platform_dir }}/.venv']
+        creates: '{{ platform_dir }}/.venv/bin/python'
+    - name: Install locked runtime dependencies
+      ansible.builtin.command:
+        argv: ['{{ platform_dir }}/.venv/bin/python', -m, pip, install, --require-hashes, -r, requirements.lock]
+        chdir: '{{ platform_dir }}'
+      register: dependencies
+      changed_when: "'Successfully installed' in dependencies.stdout"
+    - name: Install the project CLI
+      ansible.builtin.command:
+        argv: ['{{ platform_dir }}/.venv/bin/python', -m, pip, install, --no-deps, -e, '.']
+        chdir: '{{ platform_dir }}'
+      changed_when: true
+    - name: Show the explicit installation command
+      ansible.builtin.debug:
+        msg: 'Run {{ platform_dir }}/.venv/bin/mlops up, then mlops full, on the VM.'
