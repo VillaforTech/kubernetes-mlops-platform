@@ -260,7 +260,10 @@ def verify():
     cli.smoke()
     obj = json.loads(cli.kubectl("get", "inferenceservice", "iris", "-o", "json"))
     host = urllib.parse.urlsplit(obj["status"]["url"]).hostname
-    with cli.forward("istio-ingressgateway", 80, "istio-system") as base:
+    gateway = (
+        "knative-local-gateway" if host.endswith(".svc.cluster.local") else "istio-ingressgateway"
+    )
+    with cli.forward(gateway, 80, "istio-system") as base:
         request = urllib.request.Request(
             base + "/v1/models/iris:predict",
             data=json.dumps({"instances": [[5.1, 3.5, 1.4, 0.2]]}).encode(),
@@ -268,8 +271,8 @@ def verify():
         )
         with urllib.request.urlopen(request, timeout=90) as response:
             result = json.load(response)
-        if result["run_id"] != data["run_id"]:
-            raise RuntimeError("KServe is serving the wrong model run.")
+        if result["run_id"] != data["run_id"] or result["predictions"][0]["label"] != "setosa":
+            raise RuntimeError("KServe prediction or model lineage mismatch.")
     with cli.forward("nginx-nginx-ingress-controller", 80, "nginx-ingress") as base:
         for host, path in [
             ("mlflow.local", "/health"),
