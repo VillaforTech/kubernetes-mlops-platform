@@ -122,7 +122,7 @@ def image_tag():
     for path in files:
         digest.update(str(path.relative_to(ROOT)).encode())
         digest.update(path.read_bytes())
-    return "mlops-platform:" + digest.hexdigest()[:16]
+    return "dev.local/mlops-platform:" + digest.hexdigest()[:16]
 
 
 def source_revision():
