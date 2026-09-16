@@ -1,0 +1,30 @@
+name: Feature request
+description: Propose an improvement with a concrete use case.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: Explain the workflow that is difficult or unsupported today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Include how the change would fit the existing platform.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: validation
+    attributes:
+      label: How would we verify it?
+      description: Describe an observable result or acceptance criterion.
+    validations:
+      required: true

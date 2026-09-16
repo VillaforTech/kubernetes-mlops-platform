@@ -1,0 +1,49 @@
+name: Bug report
+description: Report a reproducible platform failure.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        For vulnerabilities, use private security reporting. Remove credentials,
+        kubeconfigs, and identifying infrastructure details from public reports.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Provisioning or CLI
+        - MLflow or artifact storage
+        - Kubeflow Pipelines
+        - KServe or networking
+        - Monitoring or dashboards
+        - Documentation or CI
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include the smallest command sequence that reproduces the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include the commit, OS, architecture, Docker memory, and tool versions.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Relevant diagnostics
+      description: Share only the relevant, redacted error output.
+      render: text

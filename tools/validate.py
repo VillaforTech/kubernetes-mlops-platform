@@ -52,7 +52,7 @@ def main():
                 assert (
                     "@sha256:" in container["image"] or container["image"] == "mlops-platform:dev"
                 )
-    for path in [ROOT / "README.md", *ROOT.glob("docs/**/*.md")]:
+    for path in [*ROOT.glob("*.md"), *ROOT.glob("docs/**/*.md")]:
         if not path.exists():
             continue
         for target in re.findall(r"\[[^\]]*\]\(([^) ]+)\)", path.read_text()):
