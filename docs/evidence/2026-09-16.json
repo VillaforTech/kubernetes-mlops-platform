@@ -81,5 +81,18 @@
   "multi_node": {
     "configuration_test": "passed",
     "runtime_test": "not_run"
+  },
+  "autoscaling": {
+    "replicas_before": 0,
+    "cold_start_prediction": {
+      "run_id": "3830cfbc17af4b16983be8c4c23894cb",
+      "predictions": [
+        {
+          "class_id": 0,
+          "label": "setosa"
+        }
+      ]
+    },
+    "result": "passed"
   }
 }

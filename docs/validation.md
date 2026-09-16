@@ -14,6 +14,7 @@ were obtained on a dedicated local cluster with synthetic demonstration traffic.
 | Full control plane | Kubeflow, cert-manager, Istio, Knative, KServe, and NGINX installed |
 | Kubeflow pipeline | Training and quality gate succeeded; selected run promoted |
 | KServe inference | Returned the selected MLflow run ID and the expected prediction through Istio |
+| Serverless scaling | Revision reached zero replicas; a cold-start request returned the selected model |
 | Ingress | All six hostname routes returned HTTP 200 |
 | Evidently | Drift report stored in the persistent workspace |
 | Grafana | Provisioned dashboard retrieved with all four panels |
