@@ -1,0 +1,14 @@
+.venv/
+.local/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.DS_Store
+.env
+*.key
+*.pem
+kubeconfig*
+mlruns/
+mlartifacts/
