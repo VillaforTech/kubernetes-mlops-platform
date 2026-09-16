@@ -16,9 +16,9 @@ def publish(base_url):
     workspace = RemoteWorkspace(base_url)
     projects = workspace.search_project("Iris input monitoring")
     project = projects[0] if projects else workspace.create_project("Iris input monitoring")
-    workspace.add_run(project.id, snapshot)
+    stored = workspace.add_run(project.id, snapshot)
     return {
         "project_id": str(project.id),
-        "snapshot_id": str(snapshot.id),
+        "snapshot_id": str(stored.id),
         "scenario": "controlled +1.5 cm shift in sepal length; demonstration, not observed production drift",
     }

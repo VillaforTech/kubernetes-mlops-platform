@@ -41,7 +41,7 @@ def main():
             "--workers",
             "1",
             "--allowed-hosts",
-            "mlflow,mlflow:5000,localhost:*,127.0.0.1:*",
+            "mlflow,mlflow:5000,mlflow.mlops.svc.cluster.local:5000,mlflow.local,mlflow.local:*,localhost:*,127.0.0.1:*",
         ],
     )
 

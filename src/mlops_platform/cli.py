@@ -24,6 +24,11 @@ CLUSTER = "mlops-platform"
 NAMESPACE = "mlops"
 APP_IMAGE = "mlops-platform:dev"
 
+# Local clients reach artifacts through tracking; MinIO remains cluster-internal.
+os.environ["MLFLOW_ENABLE_PROXY_MULTIPART_DOWNLOAD"] = "false"
+os.environ["MLFLOW_ENABLE_PROXY_MULTIPART_UPLOAD"] = "false"
+os.environ.setdefault("MLFLOW_DISABLE_AGENT_HINT", "1")
+
 
 def command(args, *, payload=None, timeout=600, stream=False):
     result = subprocess.run(
