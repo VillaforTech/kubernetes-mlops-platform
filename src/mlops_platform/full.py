@@ -50,16 +50,25 @@ def apply_url(url):
     # Download YAML only; no remote code is executed.
     with urllib.request.urlopen(url, timeout=60) as response:
         contents = response.read().decode()
-    cli.kubectl(
-        "apply",
-        "--server-side",
-        "--field-manager=mlops-full",
-        "-f",
-        "-",
-        payload=contents,
-        timeout=180,
-        namespace=None,
-    )
+    objects = [obj for obj in yaml.safe_load_all(contents) if obj]
+    # CRDs exceed annotation limits; controllers mutate webhook rules at runtime.
+    # Use server-side apply for CRDs and normal apply for controller-owned objects.
+    for server_side in (True, False):
+        batch = [
+            obj for obj in objects if (obj["kind"] == "CustomResourceDefinition") == server_side
+        ]
+        if not batch:
+            continue
+        flags = ["--server-side", "--field-manager=mlops-full"] if server_side else []
+        cli.kubectl(
+            "apply",
+            *flags,
+            "-f",
+            "-",
+            payload=yaml.safe_dump_all(batch),
+            timeout=180,
+            namespace=None,
+        )
 
 
 def wait(namespace, resource, condition="Available", timeout=600):

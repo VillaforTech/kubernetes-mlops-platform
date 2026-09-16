@@ -181,11 +181,12 @@ def up(workers=0):
         verify_owner()
     data = state()
     image = image_tag()
+    revision = source_revision()
     print(f"Building {image}", flush=True)
     command(["docker", "build", "--tag", image, "."], stream=True, timeout=1200)
     command(["kind", "load", "docker-image", "--name", CLUSTER, image], stream=True)
     data["image"] = image
-    data["source_revision"] = source_revision()
+    data["source_revision"] = revision
     private_json(LOCAL / "state.json", data)
     deploy()
 
