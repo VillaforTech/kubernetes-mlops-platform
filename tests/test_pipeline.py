@@ -39,3 +39,9 @@ def test_cross_namespace_manifest_apply_keeps_context_without_forcing_namespace(
     args = mock.call_args.args[0]
     assert "--context" in args
     assert "--namespace" not in args
+
+
+@pytest.mark.parametrize("accuracy", [float("nan"), float("inf"), -0.1, 1.1])
+def test_quality_gate_rejects_invalid_metric(accuracy):
+    with pytest.raises(ValueError, match="Quality gate"):
+        quality_gate({"run_id": "candidate", "metrics": {"accuracy": accuracy}}, 0.8)

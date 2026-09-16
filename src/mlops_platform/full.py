@@ -108,7 +108,12 @@ def install():
         "istiod",
         "istio-system",
         VERSIONS["istio"],
-        ["pilot.resources.requests.memory=256Mi", "pilot.resources.limits.memory=1Gi"],
+        [
+            "pilot.resources.requests.memory=256Mi",
+            "pilot.resources.limits.memory=1Gi",
+            "pilot.rollingMaxSurge=0",
+            "pilot.rollingMaxUnavailable=1",
+        ],
     )
     helm(
         "istio-ingressgateway",
@@ -121,6 +126,7 @@ def install():
     apply_url(serving + "serving-crds.yaml")
     wait("knative-serving", "crd/services.serving.knative.dev", "Established")
     apply_url(serving + "serving-core.yaml")
+    wait("knative-serving", "deployment/webhook")
     apply_url(
         "https://github.com/knative/net-istio/releases/download/"
         + VERSIONS["knative"]
@@ -182,7 +188,7 @@ def pipeline():
     execution = secrets.token_hex(12)
     with tempfile.TemporaryDirectory() as folder:
         package = Path(folder) / "pipeline.yaml"
-        compile_pipeline(data["image"], package)
+        compile_pipeline(data["image"], package, data["source_revision"])
         with cli.forward("ml-pipeline", 8888, "kubeflow") as base:
             client = kfp.Client(host=base)
             result = client.create_run_from_pipeline_package(

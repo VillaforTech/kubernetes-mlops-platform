@@ -3,13 +3,23 @@
 from kfp import compiler, dsl
 
 
-def compile_pipeline(image, destination):
+def compile_pipeline(image, destination, source_revision="uncommitted"):
     @dsl.container_component
     def train(execution: str, result: dsl.OutputPath(str)):
         return dsl.ContainerSpec(
             image=image,
             command=["python", "-m", "mlops_platform.pipeline_worker"],
-            args=["train", "--execution", execution, "--output", result],
+            args=[
+                "train",
+                "--execution",
+                execution,
+                "--output",
+                result,
+                "--source-revision",
+                source_revision,
+                "--image",
+                image,
+            ],
         )
 
     @dsl.container_component
