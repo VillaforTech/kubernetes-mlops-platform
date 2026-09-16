@@ -2,3 +2,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - https://github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic?ref=2511cdbd74cd531c6633f2e094d235082a32917d&timeout=120s
+# This upstream component publishes amd64 only. ARM hosts require emulation.
+images:
+  - name: ghcr.io/kubeflow/kfp-metadata-writer
+    newName: ghcr.io/kubeflow/kfp-metadata-writer
+    digest: sha256:33a25b3f69da0bec1182394076148ba38305e064862c341083318ae9e6535868

@@ -39,6 +39,7 @@ spec:
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9000
+        - containerPort: 9001
         resources:
           requests:
             cpu: 100m
@@ -112,3 +113,6 @@ spec:
   - name: http
     port: 9000
     targetPort: 9000
+  - name: console
+    port: 9001
+    targetPort: 9001
