@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: model-runner
+  namespace: mlops
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: platform-observer
+  namespace: mlops
+rules:
+  - apiGroups: ['']
+    resources: [pods, pods/log, services, persistentvolumeclaims]
+    verbs: [get, list, watch]
+  - apiGroups: [apps]
+    resources: [deployments, replicasets]
+    verbs: [get, list, watch]
+  - apiGroups: [batch]
+    resources: [jobs]
+    verbs: [get, list, watch]
+  - apiGroups: [serving.kserve.io]
+    resources: [inferenceservices]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: platform-observers
+  namespace: mlops
+subjects:
+  - kind: Group
+    name: mlops-observers
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: platform-observer
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pipeline-observer
+  namespace: kubeflow
+rules:
+  - apiGroups: ['']
+    resources: [pods, pods/log, services]
+    verbs: [get, list, watch]
+  - apiGroups: [argoproj.io]
+    resources: [workflows]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pipeline-observers
+  namespace: kubeflow
+subjects:
+  - kind: Group
+    name: mlops-observers
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: pipeline-observer
+  apiGroup: rbac.authorization.k8s.io

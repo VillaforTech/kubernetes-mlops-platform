@@ -1,0 +1,4 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - https://github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic?ref=2511cdbd74cd531c6633f2e094d235082a32917d&timeout=120s
