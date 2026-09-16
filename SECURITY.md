@@ -17,5 +17,6 @@ not a cryptographic attestation or a permission boundary.
 
 Never include kubeconfigs, tokens, passwords, OpenStack configuration, raw pod
 logs, or local evidence containing access data in an issue or pull request. Report
-an exposure privately to the repository owner with affected paths and revisions.
+an exposure through [private vulnerability reporting](https://github.com/VillaforTech/kubernetes-mlops-platform/security/advisories/new)
+with affected paths, revisions, impact, and safe reproduction steps.
 No response-time or production-security certification is claimed.
