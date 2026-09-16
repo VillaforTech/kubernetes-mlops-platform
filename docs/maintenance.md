@@ -55,6 +55,9 @@ runs `pip check`, installs the pinned OpenStack collection, checks module
 resolution, and validates both playbooks with `--syntax-check`. These checks
 require no cloud credentials and do not provision infrastructure. Ansible
 updates stay on stable releases compatible with the controller's Python version.
+The OpenStack collection uses the official project's GitHub mirror at the
+immutable commit for release `2.4.1`, avoiding a dependency on Galaxy's artifact
+service. Update the release and commit together when upgrading the collection.
 
 ## Releases and support
 
