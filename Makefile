@@ -5,6 +5,7 @@ help:
 	@echo 'down: refuses unless CONFIRM=mlops-platform (deletes cluster data)'
 check:
 	ruff check .
+	python -m pip check
 	pytest -q
 	python tools/validate.py
 	git diff --check

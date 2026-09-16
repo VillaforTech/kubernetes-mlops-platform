@@ -112,5 +112,5 @@ a local cluster, with no claim of host-level high availability or production
 multi-tenancy. Production operation would require authenticated ingress, TLS,
 backups, recovery testing, and environment-specific capacity planning.
 
-[Security](SECURITY.md) · [Contributing](CONTRIBUTING.md) ·
+[Security](SECURITY.md) · [Support](SUPPORT.md) · [Contributing](CONTRIBUTING.md) ·
 [MIT license](LICENSE) · [Third-party components](THIRD_PARTY.md)
