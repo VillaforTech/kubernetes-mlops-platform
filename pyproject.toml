@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kubernetes-mlops-platform"
+version = "0.1.0"
+description = "A reproducible Kubernetes platform for tracked training, model serving, and observability"
+requires-python = ">=3.11,<3.13"
+license = "MIT"
+authors = [{name = "Roberto Villafuerte"}]
+dependencies = [
+  "mlflow==3.16.0",
+  "scikit-learn==1.9.1",
+  "fastapi==0.141.1",
+  "uvicorn==0.53.0",
+  "boto3==1.43.95",
+  "psycopg2-binary==2.9.13",
+  "prometheus-client==0.26.0",
+  "PyYAML==6.0.3",
+  "evidently==0.7.23",
+  "kfp==2.17.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==8.4.2", "httpx==0.28.1", "ruff==0.12.12"]
+
+[project.scripts]
+mlops = "mlops_platform.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
