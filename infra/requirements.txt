@@ -1,2 +1,2 @@
-ansible-core==2.19.3
+ansible-core==2.19.11rc1
 openstacksdk==4.7.1
