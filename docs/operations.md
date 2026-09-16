@@ -85,21 +85,26 @@ Provisioning can incur cloud charges. Run it only against your chosen account,
 flavor, network, and SSH-only security group. Authentication stays outside Git.
 
 ```bash
-python -m pip install -r infra/requirements.txt
-ansible-galaxy collection install -r infra/ansible/collections.yml
+python3.11 -m venv .local/infra-venv
+.local/infra-venv/bin/python -m pip install -r infra/requirements.txt
+export ANSIBLE_COLLECTIONS_PATH="$PWD/.local/ansible-collections"
+.local/infra-venv/bin/ansible-galaxy collection install \
+  -r infra/ansible/collections.yml -p "$ANSIBLE_COLLECTIONS_PATH"
 cp infra/ansible/cloud-vars.yml.example .local/cloud-vars.yml
 cp infra/ansible/inventory.ini.example .local/inventory.ini
 # Edit both local files; configure OS_CLOUD outside the repository.
-ansible-playbook infra/ansible/provision.yml -e @.local/cloud-vars.yml
+.local/infra-venv/bin/ansible-playbook infra/ansible/provision.yml -e @.local/cloud-vars.yml
 
 git archive --format=tar.gz --output=.local/source.tar.gz HEAD
-ansible-playbook -i .local/inventory.ini infra/ansible/configure.yml
+.local/infra-venv/bin/ansible-playbook -i .local/inventory.ini infra/ansible/configure.yml
 ```
 
 Then run the platform commands on the VM. Access services using SSH local
 forwarding; the Kubernetes API remains bound to the VM loopback interface.
-Existing VM users can skip the provisioning playbook. The playbooks are not
-executed by CI and require separate cloud validation.
+Existing VM users can skip the provisioning playbook. CI installs the infrastructure
+tools separately from the application and checks module resolution and playbook
+syntax. It does not execute the playbooks against a VM; cloud provisioning and
+configuration still require separate validation.
 
 ## Diagnostics
 

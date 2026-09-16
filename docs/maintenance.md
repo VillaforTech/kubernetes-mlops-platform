@@ -50,6 +50,12 @@ Pinned images, Helm charts, remote manifests, and Ansible dependencies require
 explicit compatibility review. A Dependabot alert or a successful static check
 does not establish that the Kubernetes platform still runs end to end.
 
+CI installs `infra/requirements.txt` in an isolated Python 3.11 environment,
+runs `pip check`, installs the pinned OpenStack collection, checks module
+resolution, and validates both playbooks with `--syntax-check`. These checks
+require no cloud credentials and do not provision infrastructure. Ansible
+updates stay on stable releases compatible with the controller's Python version.
+
 ## Releases and support
 
 Before a release, verify CI on the intended commit, review changed capabilities,
