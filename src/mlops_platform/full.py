@@ -33,32 +33,45 @@ def helm(release, chart, namespace, version, values=()):
         "--create-namespace",
         "--wait",
         "--timeout",
-        "300s",
+        "600s",
     ]
+    # Helm 4 defaults to server-side apply; Istio controllers also own webhook fields.
+    if cli.command(["helm", "version", "--template", "{{.Version}}"]).startswith("v4."):
+        args += ["--server-side=false"]
     if chart in {"base", "istiod", "gateway"}:
         args += ["--repo", "https://istio-release.storage.googleapis.com/charts"]
     for value in values:
         args += ["--set", value]
-    cli.command(args, timeout=330)
+    print(f"Installing {release} {version}", flush=True)
+    cli.command(args, timeout=630)
 
 
 def apply_url(url):
     # Download YAML only; no remote code is executed.
     with urllib.request.urlopen(url, timeout=60) as response:
         contents = response.read().decode()
-    cli.kubectl(
-        "apply",
-        "--server-side",
-        "--field-manager=mlops-full",
-        "-f",
-        "-",
-        payload=contents,
-        timeout=180,
-        namespace=None,
-    )
+    objects = [obj for obj in yaml.safe_load_all(contents) if obj]
+    # CRDs exceed annotation limits; controllers mutate webhook rules at runtime.
+    # Use server-side apply for CRDs and normal apply for controller-owned objects.
+    for server_side in (True, False):
+        batch = [
+            obj for obj in objects if (obj["kind"] == "CustomResourceDefinition") == server_side
+        ]
+        if not batch:
+            continue
+        flags = ["--server-side", "--field-manager=mlops-full"] if server_side else []
+        cli.kubectl(
+            "apply",
+            *flags,
+            "-f",
+            "-",
+            payload=yaml.safe_dump_all(batch),
+            timeout=180,
+            namespace=None,
+        )
 
 
-def wait(namespace, resource, condition="Available", timeout=240):
+def wait(namespace, resource, condition="Available", timeout=600):
     cli.kubectl(
         "-n",
         namespace,
@@ -87,7 +100,7 @@ def install():
     )
     wait("kubeflow", "crd/workflows.argoproj.io", "Established")
     cli.kubectl("apply", "--server-side", "-k", "platform/pipelines", timeout=240, namespace=None)
-    for deployment in ["ml-pipeline", "ml-pipeline-ui", "workflow-controller"]:
+    for deployment in ["ml-pipeline", "ml-pipeline-ui", "workflow-controller", "metadata-writer"]:
         wait("kubeflow", "deployment/" + deployment)
     print("Kubeflow control plane available.", flush=True)
 
@@ -99,7 +112,18 @@ def install():
         ["crds.enabled=true"],
     )
     helm("istio-base", "base", "istio-system", VERSIONS["istio"], [])
-    helm("istiod", "istiod", "istio-system", VERSIONS["istio"], [])
+    helm(
+        "istiod",
+        "istiod",
+        "istio-system",
+        VERSIONS["istio"],
+        [
+            "pilot.resources.requests.memory=256Mi",
+            "pilot.resources.limits.memory=1Gi",
+            "pilot.rollingMaxSurge=0",
+            "pilot.rollingMaxUnavailable=1",
+        ],
+    )
     helm(
         "istio-ingressgateway",
         "gateway",
@@ -111,6 +135,7 @@ def install():
     apply_url(serving + "serving-crds.yaml")
     wait("knative-serving", "crd/services.serving.knative.dev", "Established")
     apply_url(serving + "serving-core.yaml")
+    wait("knative-serving", "deployment/webhook")
     apply_url(
         "https://github.com/knative/net-istio/releases/download/"
         + VERSIONS["knative"]
@@ -172,7 +197,7 @@ def pipeline():
     execution = secrets.token_hex(12)
     with tempfile.TemporaryDirectory() as folder:
         package = Path(folder) / "pipeline.yaml"
-        compile_pipeline(data["image"], package)
+        compile_pipeline(data["image"], package, data["source_revision"])
         with cli.forward("ml-pipeline", 8888, "kubeflow") as base:
             client = kfp.Client(host=base)
             result = client.create_run_from_pipeline_package(
@@ -245,6 +270,19 @@ def verify():
             result = json.load(response)
         if result["run_id"] != data["run_id"]:
             raise RuntimeError("KServe is serving the wrong model run.")
+    with cli.forward("nginx-nginx-ingress-controller", 80, "nginx-ingress") as base:
+        for host, path in [
+            ("mlflow.local", "/health"),
+            ("grafana.local", "/api/health"),
+            ("prometheus.local", "/-/ready"),
+            ("evidently.local", "/"),
+            ("pipelines.local", "/"),
+            ("minio.local", "/"),
+        ]:
+            request = urllib.request.Request(base + path, headers={"Host": host})
+            with urllib.request.urlopen(request, timeout=20) as response:
+                if response.status != 200:
+                    raise RuntimeError(f"Ingress route failed: {host}")
     monitor()
     for verb, resource, expected in [
         ("get", "pods", "yes"),
@@ -280,6 +318,7 @@ def verify():
                 "kserve-inference",
                 "evidently-snapshot",
                 "rbac-allow-deny",
+                "nginx-six-routes",
             ],
             "versions": VERSIONS,
         },

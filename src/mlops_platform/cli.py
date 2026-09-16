@@ -24,6 +24,11 @@ CLUSTER = "mlops-platform"
 NAMESPACE = "mlops"
 APP_IMAGE = "mlops-platform:dev"
 
+# Local clients reach artifacts through tracking; MinIO remains cluster-internal.
+os.environ["MLFLOW_ENABLE_PROXY_MULTIPART_DOWNLOAD"] = "false"
+os.environ["MLFLOW_ENABLE_PROXY_MULTIPART_UPLOAD"] = "false"
+os.environ.setdefault("MLFLOW_DISABLE_AGENT_HINT", "1")
+
 
 def command(args, *, payload=None, timeout=600, stream=False):
     result = subprocess.run(
@@ -117,7 +122,7 @@ def image_tag():
     for path in files:
         digest.update(str(path.relative_to(ROOT)).encode())
         digest.update(path.read_bytes())
-    return "mlops-platform:" + digest.hexdigest()[:16]
+    return "dev.local/mlops-platform:" + digest.hexdigest()[:16]
 
 
 def source_revision():
@@ -136,7 +141,16 @@ def doctor():
     print("Tools available. No cloud account or public ingress required.")
 
 
-def up():
+def cluster_config(owner, workers=0):
+    config = yaml.safe_load((ROOT / "infra/kind.yaml").read_text())
+    image = config["nodes"][0]["image"]
+    config["nodes"] += [{"role": "worker", "image": image} for _ in range(workers)]
+    for node in config["nodes"]:
+        node["labels"] = {"portfolio.mlops/owner": owner}
+    return config
+
+
+def up(workers=0):
     doctor()
     LOCAL.mkdir(mode=0o700, exist_ok=True)
     existing = command(["kind", "get", "clusters"]).splitlines()
@@ -145,8 +159,7 @@ def up():
     else:
         owner = secrets.token_hex(8)
         private_json(LOCAL / "state.json", {"owner": owner})
-        config = yaml.safe_load((ROOT / "infra/kind.yaml").read_text())
-        config["nodes"][0]["labels"] = {"portfolio.mlops/owner": owner}
+        config = cluster_config(owner, workers)
         (LOCAL / "kind.yaml").write_text(yaml.safe_dump(config))
         command(
             [
@@ -168,11 +181,12 @@ def up():
         verify_owner()
     data = state()
     image = image_tag()
+    revision = source_revision()
     print(f"Building {image}", flush=True)
     command(["docker", "build", "--tag", image, "."], stream=True, timeout=1200)
     command(["kind", "load", "docker-image", "--name", CLUSTER, image], stream=True)
     data["image"] = image
-    data["source_revision"] = source_revision()
+    data["source_revision"] = revision
     private_json(LOCAL / "state.json", data)
     deploy()
 
@@ -191,6 +205,11 @@ def deploy():
     verify_owner()
     data = state()
     kubectl("apply", "-f", "k8s/namespace.yaml")
+    if (
+        not (LOCAL / "credentials.json").exists()
+        and kubectl("get", "secret", "platform-secrets", "--ignore-not-found", "-o", "name").strip()
+    ):
+        raise RuntimeError("Local credentials are missing. Restore the backup before redeploying.")
     values = credentials()
     values.update(
         {
@@ -414,7 +433,6 @@ def main():
     sub = parser.add_subparsers(dest="action", required=True)
     for name in [
         "doctor",
-        "up",
         "deploy",
         "demo",
         "smoke",
@@ -426,11 +444,14 @@ def main():
         "verify-full",
     ]:
         sub.add_parser(name)
+    sub.add_parser("up").add_argument("--workers", type=int, choices=[0, 2], default=0)
     sub.add_parser("down").add_argument("--confirm", required=True)
     args = parser.parse_args()
     try:
         if args.action == "down":
             down(args.confirm)
+        elif args.action == "up":
+            up(args.workers)
         elif args.action == "status":
             verify_owner()
             print(kubectl("get", "deployments,pods,pvc,jobs"))

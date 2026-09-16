@@ -1,4 +1,4 @@
-.PHONY: help check render up demo smoke down
+.PHONY: help check render up demo smoke full pipeline serve monitor verify-full down
 help:
 	@echo 'check: lint, tests, manifest checks | up: build and deploy | demo: train and promote'
 	@echo 'smoke: verify data flow and metrics | render: inspect manifests without secrets'
@@ -18,3 +18,6 @@ smoke:
 	mlops smoke
 down:
 	mlops down --confirm "$(CONFIRM)"
+
+full pipeline serve monitor verify-full:
+	mlops $@

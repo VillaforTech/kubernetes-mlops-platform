@@ -69,3 +69,21 @@ def test_secret_payload_not_echoed_in_errors(monkeypatch):
     with pytest.raises(RuntimeError) as error:
         cli.command(["kubectl", "apply"], payload="sensitive-input")
     assert "sensitive" not in str(error.value)
+
+
+def test_multinode_config_owns_every_node():
+    config = cli.cluster_config("managed-test-owner", workers=2)
+    assert [node["role"] for node in config["nodes"]] == ["control-plane", "worker", "worker"]
+    assert all(
+        node["labels"]["portfolio.mlops/owner"] == "managed-test-owner" for node in config["nodes"]
+    )
+
+
+def test_missing_local_credentials_never_replace_live_secret(tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, "LOCAL", tmp_path)
+    monkeypatch.setattr(cli, "verify_owner", lambda: None)
+    monkeypatch.setattr(cli, "state", lambda: {"image": "test"})
+    monkeypatch.setattr(cli, "kubectl", lambda *a, **k: "secret/platform-secrets")
+    with pytest.raises(RuntimeError, match="Restore the backup"):
+        cli.deploy()
+    assert not (tmp_path / "credentials.json").exists()
