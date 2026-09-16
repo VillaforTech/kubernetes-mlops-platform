@@ -1,0 +1,85 @@
+{
+  "date": "2026-09-16",
+  "verification_revision": "096d1da2040cc5ae7497a5497075c8952f763e94",
+  "environment": {
+    "os": "macOS",
+    "architecture": "arm64",
+    "docker": "28.4.0",
+    "kind": "0.32.0",
+    "kubernetes": "1.33.12",
+    "python": "3.11.15",
+    "docker_memory_gib": 7.7
+  },
+  "offline": {
+    "tests_passed": 31,
+    "lint": "passed",
+    "rendered_core_objects": 22,
+    "manifest_policies": "passed",
+    "secret_scan": "passed"
+  },
+  "core": {
+    "image": "dev.local/mlops-platform:b85dbbf637377a15",
+    "source_revision": "3ad9f953134ca1a85fc651de18a8ff004469b6cc",
+    "run_id": "3830cfbc17af4b16983be8c4c23894cb",
+    "training_job": "kubeflow-pipeline",
+    "metrics": {
+      "accuracy": 0.9210526315789473
+    },
+    "dataset_sha256": "aa06b8008ceba42efc654be0f83fdafc786239c9e8f13146044d078f5aab8f23",
+    "verified_at": "2026-09-16T16:02:13.422949+00:00",
+    "checks": [
+      "prediction",
+      "invalid-input-422",
+      "run-finished",
+      "artifact-round-trip",
+      "prometheus-counter",
+      "grafana-health"
+    ]
+  },
+  "full": {
+    "pipeline_run_id": "6405f0ad-153d-40c7-94ff-33b5afb635b3",
+    "run_id": "3830cfbc17af4b16983be8c4c23894cb",
+    "checks": [
+      "kubeflow-pipeline",
+      "kserve-inference",
+      "evidently-snapshot",
+      "rbac-allow-deny",
+      "nginx-six-routes"
+    ],
+    "versions": {
+      "kfp": "2.17.2",
+      "kfp_commit": "2511cdbd74cd531c6633f2e094d235082a32917d",
+      "kserve": "v0.20.0",
+      "cert_manager": "v1.17.0",
+      "istio": "1.27.1",
+      "knative": "knative-v1.21.1"
+    }
+  },
+  "monitoring": {
+    "project_id": "01a0aadf-58ef-7a4c-83f3-497ad04c604b",
+    "snapshot_id": "01a0aaf4-68e5-7e24-970d-2f93b213263b",
+    "scenario": "controlled +1.5 cm shift in sepal length; demonstration, not observed production drift"
+  },
+  "grafana": {
+    "uid": "mlops-platform",
+    "panels": [
+      "Predictions / second",
+      "Prediction p95",
+      "Total predictions",
+      "Serving target available"
+    ]
+  },
+  "observer_certificate": {
+    "get_pods": "allowed",
+    "get_secrets": "denied",
+    "delete_deployments": "denied"
+  },
+  "cloud": {
+    "ansible_syntax": "passed",
+    "resources_provisioned": false
+  },
+  "multi_node": {
+    "configuration_test": "passed",
+    "runtime_test": "not_run"
+  }
+}

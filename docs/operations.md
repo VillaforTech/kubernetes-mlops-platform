@@ -61,6 +61,7 @@ Use another terminal for each forwarding process. Stop it with Ctrl-C.
 | MinIO console | mlops | `svc/minio 9001:9001` |
 | Grafana | mlops | `svc/grafana 3000:3000` |
 | Kubeflow UI | kubeflow | `svc/ml-pipeline-ui 8080:80` |
+| KServe local gateway | istio-system | `svc/knative-local-gateway 8082:80` |
 | NGINX hostname ingress | nginx-ingress | `svc/nginx-nginx-ingress-controller 8081:80` |
 
 The Grafana username is `admin`; its generated password is in the owner-only
@@ -68,6 +69,15 @@ The Grafana username is `admin`; its generated password is in the owner-only
 an issue, screenshot, or commit. Hostname routes are defined in
 `platform/ingress/routes.yaml`. Through the NGINX forward, send the matching Host
 header (for example `curl -H 'Host: mlflow.local' http://127.0.0.1:8081/`).
+
+To call the selected KServe model through the local gateway forward:
+
+```bash
+curl -H 'Host: iris.mlops.svc.cluster.local' \
+  -H 'Content-Type: application/json' \
+  -d '{"instances":[[5.1,3.5,1.4,0.2]]}' \
+  http://127.0.0.1:8082/v1/models/iris:predict
+```
 
 ## Remote VM / OpenStack
 
