@@ -141,7 +141,16 @@ def doctor():
     print("Tools available. No cloud account or public ingress required.")
 
 
-def up():
+def cluster_config(owner, workers=0):
+    config = yaml.safe_load((ROOT / "infra/kind.yaml").read_text())
+    image = config["nodes"][0]["image"]
+    config["nodes"] += [{"role": "worker", "image": image} for _ in range(workers)]
+    for node in config["nodes"]:
+        node["labels"] = {"portfolio.mlops/owner": owner}
+    return config
+
+
+def up(workers=0):
     doctor()
     LOCAL.mkdir(mode=0o700, exist_ok=True)
     existing = command(["kind", "get", "clusters"]).splitlines()
@@ -150,8 +159,7 @@ def up():
     else:
         owner = secrets.token_hex(8)
         private_json(LOCAL / "state.json", {"owner": owner})
-        config = yaml.safe_load((ROOT / "infra/kind.yaml").read_text())
-        config["nodes"][0]["labels"] = {"portfolio.mlops/owner": owner}
+        config = cluster_config(owner, workers)
         (LOCAL / "kind.yaml").write_text(yaml.safe_dump(config))
         command(
             [
@@ -196,6 +204,11 @@ def deploy():
     verify_owner()
     data = state()
     kubectl("apply", "-f", "k8s/namespace.yaml")
+    if (
+        not (LOCAL / "credentials.json").exists()
+        and kubectl("get", "secret", "platform-secrets", "--ignore-not-found", "-o", "name").strip()
+    ):
+        raise RuntimeError("Local credentials are missing. Restore the backup before redeploying.")
     values = credentials()
     values.update(
         {
@@ -419,7 +432,6 @@ def main():
     sub = parser.add_subparsers(dest="action", required=True)
     for name in [
         "doctor",
-        "up",
         "deploy",
         "demo",
         "smoke",
@@ -431,11 +443,14 @@ def main():
         "verify-full",
     ]:
         sub.add_parser(name)
+    sub.add_parser("up").add_argument("--workers", type=int, choices=[0, 2], default=0)
     sub.add_parser("down").add_argument("--confirm", required=True)
     args = parser.parse_args()
     try:
         if args.action == "down":
             down(args.confirm)
+        elif args.action == "up":
+            up(args.workers)
         elif args.action == "status":
             verify_owner()
             print(kubectl("get", "deployments,pods,pvc,jobs"))
